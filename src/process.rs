@@ -111,7 +111,8 @@ mod impl_process_procfs {
         /// Test if process is paused
         pub fn is_paused(&self) -> bool {
             if let Ok(status) = self.inner.status() {
-                dbg!(status.state) == "T (stopped)"
+                // dbg!(self.get_cmdline());
+                status.state == "T (stopped)"
             } else {
                 false
             }
@@ -214,12 +215,14 @@ mod session {
             self.send_signal("SIGSTOP")?;
             Ok(())
         }
+        
         /// Resume processes in the session.
         pub fn resume(&self) -> Result<()> {
             debug!("resume session {:?}", self.id());
             self.send_signal("SIGCONT")?;
             Ok(())
         }
+        
         /// Terminate processes in the session.
         pub fn terminate(&self) -> Result<()> {
             debug!("termate session {:?}", self.id());
@@ -277,15 +280,22 @@ pub use session::{SessionHandler, SpawnSessionExt};
 #[test]
 fn test_spawn_session() -> Result<()> {
     use std::process::Command;
-
     gut::cli::setup_logger_for_test();
 
     let mut command = Command::new("scripts/test_runner.sh");
     let (mut child, session_handler) = command.spawn_session()?;
 
+    gut::utils::sleep(0.2);
     session_handler.pause()?;
+    for p in session_handler.get_processes()? {
+        assert!(p.is_paused());
+    }
+    gut::utils::sleep(0.2);
     session_handler.resume()?;
-    gut::utils::sleep(0.5);
+    for p in session_handler.get_processes()? {
+        assert!(!p.is_paused());
+    }
+    gut::utils::sleep(0.2);
     session_handler.terminate()?;
     gut::utils::sleep(0.2);
     assert!(child.try_wait().is_ok());
