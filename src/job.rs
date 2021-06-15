@@ -508,11 +508,10 @@ mod impl_jobs_slotmap {
 mod session {
     use super::*;
 
+    pub use crate::process::SessionHandler;
     use std::process::{Child, Command};
 
     pub struct Session {}
-
-    pub struct SessionHandler {}
 
     impl Session {
         pub fn new(command: Command) -> Self {
@@ -528,24 +527,6 @@ mod session {
         }
 
         pub fn get_handler(&self) -> Option<SessionHandler> {
-            todo!();
-        }
-    }
-
-    impl SessionHandler {
-        fn new(s: Child) -> Self {
-            todo!()
-        }
-
-        pub fn terminate(&self) -> Result<()> {
-            todo!();
-        }
-
-        pub fn resume(&self) -> Result<()> {
-            todo!();
-        }
-
-        pub fn pause(&self) -> Result<()> {
             todo!();
         }
     }

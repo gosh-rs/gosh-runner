@@ -85,7 +85,7 @@ impl UniqueProcessId {
     }
 
     /// Process Id
-    pub fn pid(&self) -> u32 {
+    pub fn id(&self) -> u32 {
         self.0
     }
 }
@@ -131,7 +131,7 @@ fn impl_signal_processes_by_session_id(sid: u32, signal: &str) -> Result<()> {
         trace!("{:?}", child);
         // refresh process id from /proc before kill
         // check starttime to avoid re-used pid
-        let pid = child.pid();
+        let pid = child.id();
         if let Ok(process) = UniqueProcessId::from_pid(pid) {
             if process == child {
                 nix::sys::signal::kill(nix::unistd::Pid::from_raw(pid as i32), signal)?;
@@ -152,31 +152,36 @@ fn impl_signal_processes_by_session_id(sid: u32, signal: &str) -> Result<()> {
 mod session {
     use super::*;
 
-    pub trait ProcessSessionId {
-        fn get_session_id(&self) -> Option<u32>;
-    }
-
     /// Handle a group of processes in the same session.
+    #[derive(Debug, Clone)]
     pub struct SessionHandler {
         process: Option<UniqueProcessId>,
     }
 
-    impl SessionHandler {
-        fn from(p: impl ProcessSessionId) -> Self {
-            let process = p.get_session_id().and_then(|id| UniqueProcessId::from_pid(id).ok());
+    /// Create child process in new session
+    pub trait SpawnSessionExt<T> {
+        fn spawn_session(&mut self) -> Result<(T, SessionHandler)>;
+    }
 
+    impl SessionHandler {
+        fn from(id: u32) -> Self {
+            let process = UniqueProcessId::from_pid(id).ok();
             Self { process }
+        }
+
+        fn id(&self) -> Option<u32> {
+            self.process.map(|p| p.id())
         }
 
         /// Send signal to all processes in the session
         fn send_signal(&self, signal: &str) -> Result<()> {
             if let Some(p_old) = &self.process {
-                let id = p_old.pid();
+                let id = p_old.id();
                 let p_now = UniqueProcessId::from_pid(id)?;
                 // send signal when the session leader still exists and look
                 // like the same as created before
                 if p_now == *p_old {
-                    duct::cmd!("pkill", "--signal", signal, "-s", p_now.pid().to_string())
+                    duct::cmd!("pkill", "--signal", signal, "-s", p_now.id().to_string())
                         .unchecked()
                         .run()
                         .context("send signal using pkill")?;
@@ -191,16 +196,19 @@ mod session {
 
         /// Pause all processes in the session.
         pub fn pause(&self) -> Result<()> {
+            debug!("pause session {:?}", self.id());
             self.send_signal("SIGSTOP")?;
             Ok(())
         }
         /// Resume processes in the session.
         pub fn resume(&self) -> Result<()> {
+            debug!("resume session {:?}", self.id());
             self.send_signal("SIGCONT")?;
             Ok(())
         }
         /// Terminate processes in the session.
         pub fn terminate(&self) -> Result<()> {
+            debug!("termate session {:?}", self.id());
             // If process was paused, terminate it directly could result a deadlock or zombie.
             self.send_signal("SIGCONT")?;
             gut::utils::sleep(0.2);
@@ -209,15 +217,24 @@ mod session {
         }
     }
 
-    impl ProcessSessionId for std::process::Child {
-        fn get_session_id(&self) -> Option<u32> {
-            self.id().into()
+    impl SpawnSessionExt<std::process::Child> for std::process::Command {
+        fn spawn_session(&mut self) -> Result<(std::process::Child, SessionHandler)> {
+            let child = self.new_process_group().spawn()?;
+            let id = child.id();
+            let session_handler = SessionHandler::from(id);
+            Ok((child, session_handler))
         }
     }
 
-    impl ProcessSessionId for tokio::process::Child {
-        fn get_session_id(&self) -> Option<u32> {
-            self.id()
+    impl SpawnSessionExt<tokio::process::Child> for tokio::process::Command {
+        fn spawn_session(&mut self) -> Result<(tokio::process::Child, SessionHandler)> {
+            let child = self.new_process_group().spawn()?;
+            if let Some(id) = child.id() {
+                let session_handler = SessionHandler::from(id);
+                Ok((child, session_handler))
+            } else {
+                bail!("Spawned child process died?");
+            }
         }
     }
 }
@@ -231,9 +248,26 @@ pub fn signal_processes_by_session_id(sid: u32, signal: &str) -> Result<()> {
 }
 
 pub use process_group::ProcessGroupExt;
-pub use session::SessionHandler;
+pub use session::{SessionHandler, SpawnSessionExt};
 // pub:1 ends here
 
 // [[file:../runners.note::*test][test:1]]
+#[test]
+fn test_spawn_session() -> Result<()> {
+    use std::process::Command;
 
+    gut::cli::setup_logger_for_test();
+
+    let mut command = Command::new("scripts/test_runner.sh");
+    let (mut child, session_handler) = command.spawn_session()?;
+
+    session_handler.pause()?;
+    session_handler.resume()?;
+    gut::utils::sleep(0.5);
+    session_handler.terminate()?;
+    gut::utils::sleep(0.2);
+    assert!(child.try_wait().is_ok());
+
+    Ok(())
+}
 // test:1 ends here
