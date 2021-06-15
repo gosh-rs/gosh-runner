@@ -43,14 +43,6 @@ mod process_group {
 }
 // process group:1 ends here
 
-// [[file:../runners.note::*signal][signal:1]]
-use nix::sys::signal::Signal;
-#[test]
-fn test_unix_signal() {
-    let s: Signal = "SIGINT".parse().unwrap();
-}
-// signal:1 ends here
-
 // [[file:../runners.note::*timestamp][timestamp:1]]
 use chrono::*;
 
@@ -61,92 +53,107 @@ fn float_unix_timestamp_to_date_time(t: f64) -> DateTime<Utc> {
 }
 // timestamp:1 ends here
 
-// [[file:../runners.note::*unique process][unique process:1]]
-use std::collections::HashSet;
-use std::time::Duration;
+// [[file:../runners.note::*process][process:1]]
+mod impl_process_procfs {
+    use super::*;
+    use procfs::process;
 
-#[derive(Clone, PartialEq, Eq, Hash, Copy, Debug)]
-pub(crate) struct UniqueProcessId(u32, Duration);
+    /// Represents a process
+    #[derive(Debug, Clone)]
+    pub struct Process {
+        inner: process::Process,
+        create_time: u64,
+    }
 
-impl UniqueProcessId {
-    /// construct from pid. return error if the process `pid` not alive.
-    fn from_pid(pid: u32) -> Result<Self> {
-        if let Ok(p) = psutil::process::Process::new(pid) {
-            if p.is_running() {
-                return Ok(Self::from_process(p));
+    impl Process {
+        /// Construct from process ID
+        pub fn from_pid(pid: u32) -> Result<Self> {
+            let p = process::Process::new(pid as i32)?;
+            let create_time = p.stat()?.starttime;
+            let p = Self { inner: p, create_time };
+            Ok(p)
+        }
+
+        /// Return the system assigned process ID
+        pub fn id(&self) -> u32 {
+            self.inner.pid as u32
+        }
+
+        /// Test if process is alive
+        pub fn is_alive(&self) -> bool {
+            self.inner.is_alive()
+        }
+
+        /// Get the session Id of the process.
+        pub fn get_session_id(&self) -> Result<u32> {
+            let stat = self.inner.stat()?;
+            Ok(stat.session as u32)
+        }
+
+        /// Get the working directory of the process.
+        pub fn get_cwd(&self) -> Result<PathBuf> {
+            let d = self.inner.cwd()?;
+            Ok(d)
+        }
+
+        /// Return actual path of the executed command for the process.
+        pub fn get_exe(&self) -> Result<PathBuf> {
+            let exe = self.inner.exe()?;
+            Ok(exe)
+        }
+
+        /// Returns the complete command line for the process.
+        pub fn get_cmdline(&self) -> Result<Vec<String>> {
+            let cmdline = self.inner.cmdline()?;
+            Ok(cmdline)
+        }
+
+        /// Test if process is paused
+        pub fn is_paused(&self) -> bool {
+            if let Ok(status) = self.inner.status() {
+                dbg!(status.state) == "T (stopped)"
+            } else {
+                false
             }
         }
-        bail!("invalid pid: {}", pid)
+
+        /// Send signal to the process.
+        pub fn send_signal(&self, signal: &str) -> Result<()> {
+            use nix::sys::signal::Signal;
+
+            let signal: Signal = signal
+                .parse()
+                .with_context(|| format!("invalid signal name: {}", signal))?;
+            nix::sys::signal::kill(nix::unistd::Pid::from_raw(self.inner.pid), signal)?;
+            Ok(())
+        }
+
+        /// Test if is the same process, useful for avoiding re-used process ID
+        pub fn is_same(&self, p: &Process) -> bool {
+            self.create_time == p.create_time && self.inner.pid == p.inner.pid
+        }
     }
 
-    /// construct from psutil `Process` struct (1.x branch only)
-    fn from_process(p: psutil::process::Process) -> Self {
-        Self(p.pid(), p.create_time())
-    }
-
-    /// Process Id
-    pub fn id(&self) -> u32 {
-        self.0
-    }
-}
-// unique process:1 ends here
-
-// [[file:../runners.note::*impl/psutil][impl/psutil:1]]
-/// Find child processes using psutil (without using shell commands)
-///
-/// # Reference
-///
-/// https://github.com/borntyping/rust-psutil/blob/master/examples/ps.rs
-fn get_child_processes_by_session_id(sid: u32) -> Result<HashSet<UniqueProcessId>> {
-    // for Process::procfs_stat method
-    use psutil::process::os::linux::ProcessExt;
-
-    let child_processes = psutil::process::pids()?
-        .into_iter()
-        .filter_map(|pid| psutil::process::Process::new(pid).ok())
-        .filter_map(|p| p.procfs_stat().ok().map(|s| (p, s)))
-        .filter_map(|(p, s)| {
-            if s.session as u32 == sid {
-                Some(UniqueProcessId::from_process(p))
-            } else {
+    /// Return processes with the same session ID
+    pub fn get_processes_in_session(id: u32) -> Result<Vec<Process>> {
+        let all = process::all_processes()?
+            .into_iter()
+            .filter_map(|p| {
+                if let Ok(stat) = p.stat() {
+                    if stat.session == id as i32 {
+                        return Some(Process {
+                            inner: p,
+                            create_time: stat.starttime,
+                        });
+                    }
+                }
                 None
-            }
-        })
-        .collect();
-
-    Ok(child_processes)
-}
-
-/// Signal child processes by session id
-///
-/// Note: currently, psutil has no API for kill with signal other than SIGKILL
-///
-fn impl_signal_processes_by_session_id(sid: u32, signal: &str) -> Result<()> {
-    let signal: Signal = signal.parse().with_context(|| format!("invalid signal: {}", signal))?;
-
-    let child_processes = get_child_processes_by_session_id(sid)?;
-    debug!("found {} child processes in session {} ", child_processes.len(), sid);
-
-    for child in child_processes {
-        trace!("{:?}", child);
-        // refresh process id from /proc before kill
-        // check starttime to avoid re-used pid
-        let pid = child.id();
-        if let Ok(process) = UniqueProcessId::from_pid(pid) {
-            if process == child {
-                nix::sys::signal::kill(nix::unistd::Pid::from_raw(pid as i32), signal)?;
-                debug!("process {} was killed", pid);
-            } else {
-                warn!("process id {} was reused?", pid);
-            }
-        } else {
-            info!("process {} already terminated.", pid);
-        }
+            })
+            .collect();
+        Ok(all)
     }
-
-    Ok(())
 }
-// impl/psutil:1 ends here
+// process:1 ends here
 
 // [[file:../runners.note::*session][session:1]]
 mod session {
@@ -155,7 +162,7 @@ mod session {
     /// Handle a group of processes in the same session.
     #[derive(Debug, Clone)]
     pub struct SessionHandler {
-        process: Option<UniqueProcessId>,
+        process: Option<Process>,
     }
 
     /// Create child process in new session
@@ -165,26 +172,23 @@ mod session {
 
     impl SessionHandler {
         fn from(id: u32) -> Self {
-            let process = UniqueProcessId::from_pid(id).ok();
+            let process = Process::from_pid(id).ok();
             Self { process }
         }
 
         fn id(&self) -> Option<u32> {
-            self.process.map(|p| p.id())
+            self.process.as_ref().map(|p| p.id())
         }
 
         /// Send signal to all processes in the session
         fn send_signal(&self, signal: &str) -> Result<()> {
             if let Some(p_old) = &self.process {
                 let id = p_old.id();
-                let p_now = UniqueProcessId::from_pid(id)?;
-                // send signal when the session leader still exists and look
-                // like the same as created before
-                if p_now == *p_old {
-                    duct::cmd!("pkill", "--signal", signal, "-s", p_now.id().to_string())
-                        .unchecked()
-                        .run()
-                        .context("send signal using pkill")?;
+                let p_now = Process::from_pid(id)?;
+                // send signal only when the session leader still exists and
+                // look like the same as created before (PID could be reused)
+                if p_now.is_same(p_old) {
+                    signal_processes_by_session_id(id, signal)?;
                 } else {
                     warn!("Send signal {} to a resued process {}", signal, id);
                 }
@@ -192,6 +196,16 @@ mod session {
                 bail!("no session leader!");
             }
             Ok(())
+        }
+
+        /// Return the processes in the session.
+        pub fn get_processes(&self) -> Result<Vec<Process>> {
+            if let Some(id) = self.id() {
+                let p = get_processes_in_session(id)?;
+                Ok(p)
+            } else {
+                bail!("session is not alive");
+            }
         }
 
         /// Pause all processes in the session.
@@ -242,11 +256,19 @@ mod session {
 
 // [[file:../runners.note::*pub][pub:1]]
 /// Signal all child processes in session `sid`
-pub fn signal_processes_by_session_id(sid: u32, signal: &str) -> Result<()> {
-    info!("killing session {} with signal {}", sid, signal);
-    impl_signal_processes_by_session_id(sid, signal)
+pub(crate) fn signal_processes_by_session_id(sid: u32, signal: &str) -> Result<()> {
+    info!("Send signal {} to processes in session {}", signal, sid);
+
+    let pp = get_processes_in_session(sid)?;
+    info!("found {} processes in session {}", pp.len(), sid);
+    for p in pp {
+        p.send_signal(signal)?;
+    }
+
+    Ok(())
 }
 
+pub use impl_process_procfs::{get_processes_in_session, Process};
 pub use process_group::ProcessGroupExt;
 pub use session::{SessionHandler, SpawnSessionExt};
 // pub:1 ends here

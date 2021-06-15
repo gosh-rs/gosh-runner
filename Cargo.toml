@@ -11,7 +11,8 @@ structopt = "0.3"
 chrono = "0.4"
 tempfile = "3.0"
 nix = "0.21"
-psutil = {version = "3.2", default-features = false, features = ["process"]} 
+procfs = {version = "0.9"} 
+# psutil = {version = "3.2", default-features = false, features = ["process"]} 
 tokio = { version="1.6", features=["full"]}
 reqwest = { version="0.11", default-features = false, features=["json", "blocking", "rustls-tls"]}
 warp = { version = "0.3", package = "warp" }
