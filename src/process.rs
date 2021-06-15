@@ -148,6 +148,81 @@ fn impl_signal_processes_by_session_id(sid: u32, signal: &str) -> Result<()> {
 }
 // impl/psutil:1 ends here
 
+// [[file:../runners.note::*session][session:1]]
+mod session {
+    use super::*;
+
+    pub trait ProcessSessionId {
+        fn get_session_id(&self) -> Option<u32>;
+    }
+
+    /// Handle a group of processes in the same session.
+    pub struct SessionHandler {
+        process: Option<UniqueProcessId>,
+    }
+
+    impl SessionHandler {
+        fn from(p: impl ProcessSessionId) -> Self {
+            let process = p.get_session_id().and_then(|id| UniqueProcessId::from_pid(id).ok());
+
+            Self { process }
+        }
+
+        /// Send signal to all processes in the session
+        fn send_signal(&self, signal: &str) -> Result<()> {
+            if let Some(p_old) = &self.process {
+                let id = p_old.pid();
+                let p_now = UniqueProcessId::from_pid(id)?;
+                // send signal when the session leader still exists and look
+                // like the same as created before
+                if p_now == *p_old {
+                    duct::cmd!("pkill", "--signal", signal, "-s", p_now.pid().to_string())
+                        .unchecked()
+                        .run()
+                        .context("send signal using pkill")?;
+                } else {
+                    warn!("Send signal {} to a resued process {}", signal, id);
+                }
+            } else {
+                bail!("no session leader!");
+            }
+            Ok(())
+        }
+
+        /// Pause all processes in the session.
+        pub fn pause(&self) -> Result<()> {
+            self.send_signal("SIGSTOP")?;
+            Ok(())
+        }
+        /// Resume processes in the session.
+        pub fn resume(&self) -> Result<()> {
+            self.send_signal("SIGCONT")?;
+            Ok(())
+        }
+        /// Terminate processes in the session.
+        pub fn terminate(&self) -> Result<()> {
+            // If process was paused, terminate it directly could result a deadlock or zombie.
+            self.send_signal("SIGCONT")?;
+            gut::utils::sleep(0.2);
+            self.send_signal("SIGTERM")?;
+            Ok(())
+        }
+    }
+
+    impl ProcessSessionId for std::process::Child {
+        fn get_session_id(&self) -> Option<u32> {
+            self.id().into()
+        }
+    }
+
+    impl ProcessSessionId for tokio::process::Child {
+        fn get_session_id(&self) -> Option<u32> {
+            self.id()
+        }
+    }
+}
+// session:1 ends here
+
 // [[file:../runners.note::*pub][pub:1]]
 /// Signal all child processes in session `sid`
 pub fn signal_processes_by_session_id(sid: u32, signal: &str) -> Result<()> {
@@ -156,4 +231,9 @@ pub fn signal_processes_by_session_id(sid: u32, signal: &str) -> Result<()> {
 }
 
 pub use process_group::ProcessGroupExt;
+pub use session::SessionHandler;
 // pub:1 ends here
+
+// [[file:../runners.note::*test][test:1]]
+
+// test:1 ends here
