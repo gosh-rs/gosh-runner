@@ -30,7 +30,7 @@ pub use server::enter_main as server_enter_main;
 
 /// Some extension traits
 pub mod prelude {
-    pub use crate::process::{ProcessGroupExt, SpawnSessionExt};
+    pub use crate::process::SpawnSessionExt;
 }
 
 pub use process::{Session, SessionHandler};
