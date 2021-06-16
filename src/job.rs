@@ -70,11 +70,11 @@ impl Job {
 pub struct Session {
     job: Job,
 
+    // command session. The drop order is above Tempdir
+    session: Option<crate::process::Session<tokio::process::Child>>,
+    
     /// The working directory of computation
     wrk_dir: TempDir,
-
-    // command session
-    session: Option<tokio::process::Child>,
 }
 // session:1 ends here
 
@@ -161,43 +161,46 @@ impl Session {
         session
     }
 
-    /// Terminate background command session.
-    fn terminate(&mut self) {
-        if let Some(child) = &mut self.session {
-            if let Some(sid) = child.id() {
-                crate::process::signal_processes_by_session_id(sid, "SIGTERM").expect("term session");
-                info!("Job with command session {} has been terminated.", sid);
-            }
-        } else {
-            debug!("Job not started yet.");
-        }
-    }
-
     /// Wait for background command to complete.
-    async fn wait(&mut self) {
-        if let Some(mut child) = self.session.take() {
-            child.wait_with_output().await;
+    async fn wait(&mut self) -> Result<()> {
+        if let Some(s) = self.session.as_mut() {
+            let ecode = s.child.wait().await?;
+            info!("job session exited: {}", ecode);
         } else {
             error!("Job not started yet.");
         }
+        Ok(())
     }
 
     /// Run command in background.
     async fn start(&mut self) -> Result<()> {
+        use crate::process::SpawnSessionExt;
+
         let wdir = self.wrk_dir();
         info!("job work direcotry: {}", wdir.display());
 
-        let mut child = tokio::process::Command::new(&self.run_file())
+        let mut session = tokio::process::Command::new(&self.run_file())
             .current_dir(wdir)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
-            .spawn()
-            .expect("spawn command session");
+            .spawn_session()?;
 
-        let mut stdin = child.stdin.take().expect("child did not have a handle to stdout");
-        let mut stdout = child.stdout.take().expect("child did not have a handle to stdout");
-        let mut stderr = child.stderr.take().expect("child did not have a handle to stderr");
+        let mut stdin = session
+            .child
+            .stdin
+            .take()
+            .expect("child did not have a handle to stdout");
+        let mut stdout = session
+            .child
+            .stdout
+            .take()
+            .expect("child did not have a handle to stdout");
+        let mut stderr = session
+            .child
+            .stderr
+            .take()
+            .expect("child did not have a handle to stderr");
 
         // NOTE: suppose stdin stream is small.
         stdin.write_all(self.job.input.as_bytes()).await;
@@ -208,9 +211,9 @@ impl Session {
         tokio::io::copy(&mut stdout, &mut fout).await?;
         tokio::io::copy(&mut stderr, &mut ferr).await?;
 
-        let sid = child.id();
+        let sid = session.handler().id();
         info!("command running in session {:?}", sid);
-        self.session = Some(child);
+        self.session = session.into();
 
         Ok(())
     }
@@ -256,14 +259,6 @@ impl Session {
     }
 }
 // extra:1 ends here
-
-// [[file:../runners.note::*drop][drop:1]]
-impl Drop for Session {
-    fn drop(&mut self) {
-        let _ = self.terminate();
-    }
-}
-// drop:1 ends here
 
 // [[file:../runners.note::*core][core:1]]
 mod db {
@@ -397,7 +392,7 @@ mod db {
             let mut jobs = self.inner.lock().await;
             let k = jobs.check_job(id)?;
             jobs[k].start().await?;
-            jobs[k].wait().await;
+            jobs[k].wait().await?;
             Ok(())
         }
     }
