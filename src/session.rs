@@ -8,12 +8,9 @@ use tokio::time::{sleep as delay_for, Duration};
 // imports:1 ends here
 
 // [[file:../runners.note::*base][base:1]]
-/// Manage process group using session
-#[derive(Debug)]
-pub(crate) struct Session {
-    /// Session ID
-    sid: Option<u32>,
+use crate::process::SpawnSessionExt;
 
+pub(crate) struct Session {
     /// Arguments that will be passed to `program`
     rest: Vec<String>,
 
@@ -27,15 +24,9 @@ pub(crate) struct Session {
 impl Session {
     /// Create a new session.
     pub fn new(program: &str) -> Self {
-        use crate::process::ProcessGroupExt;
-
         let mut command = Command::new(program);
-        // reap child processes when `Child` drop
-        command.kill_on_drop(true).new_process_group();
-
         Self {
             command,
-            sid: None,
             timeout: None,
             rest: vec![],
         }
@@ -79,51 +70,15 @@ impl Session {
         self.timeout = Some(t);
         self
     }
-
-    /// Terminate child processes in a session.
-    pub fn terminate(&mut self) -> Result<()> {
-        self.signal("SIGTERM")
-    }
-
-    /// Kill processes in a session.
-    pub fn kill(&mut self) -> Result<()> {
-        self.signal("SIGKILL")
-    }
-
-    /// Resume processes in a session.
-    pub fn resume(&mut self) -> Result<()> {
-        self.signal("SIGCONT")
-    }
-
-    /// Pause processes in a session.
-    pub fn pause(&mut self) -> Result<()> {
-        self.signal("SIGSTOP")
-    }
-
-    /// send signal to child processes
-    pub fn signal(&mut self, sig: &str) -> Result<()> {
-        if let Some(sid) = self.sid {
-            crate::process::signal_processes_by_session_id(sid, sig)?;
-        } else {
-            debug!("process not started yet");
-        }
-        Ok(())
-    }
 }
 // base:1 ends here
 
 // [[file:../runners.note::*core][core:1]]
 impl Session {
     async fn start(&mut self) -> Result<()> {
-        let mut child = self.command.spawn()?;
-        self.sid = child.id();
-        // Ensure we close any stdio handles so we can't deadlock
-        // waiting on the child which may be waiting to read/write
-        // to a pipe we're holding.
-        child.stdin.take();
-        child.stdout.take();
-        child.stderr.take();
+        use crate::process::SpawnSessionExt;
 
+        let mut session = self.command.spawn_session()?;
         // running timeout for 2 days
         let default_timeout = 3600 * 2;
         let timeout = tokio::time::sleep(Duration::from_secs(self.timeout.unwrap_or(default_timeout) as u64));
@@ -141,7 +96,7 @@ impl Session {
                     eprintln!("user interruption");
                     break 1;
                 }
-                o = child.wait() => {
+                o = session.child.wait() => {
                     println!("program completed");
                     match o {
                         Ok(o) => {
@@ -158,15 +113,19 @@ impl Session {
 
         if v == 1 {
             info!("program was interrupted.");
-            self.kill()?;
+            // self.kill()?;
         } else {
             info!("checking orphaned processes ...");
-            self.kill()?;
+            // self.kill()?;
+        }
+        let pps = session.handler().get_processes()?;
+        for p in pps {
+            dbg!(p);
         }
 
         Ok(())
     }
-    
+
     /// Run command with session manager.
     pub fn run(mut self) -> Result<()> {
         let mut rt = tokio::runtime::Runtime::new().context("tokio runtime failure")?;
