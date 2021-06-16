@@ -1,4 +1,18 @@
 // [[file:../runners.note::*imports][imports:1]]
+//! # Example
+//!
+//! ```
+//! use gosh_runner::prelude::*;
+//! 
+//! let mut command = std::process::Command::new("vasp-program");
+//! let mut session = command.spawn_session()?;
+//! let session_handler = session.handler().clone();
+//! session_handler.pause()?;
+//! session_handler.resume()?;
+//! session_handler.termiate()?;
+//! session.child.wait()?;
+//! ```
+
 use crate::common::*;
 // imports:1 ends here
 
@@ -166,6 +180,20 @@ mod session {
 
     /// Manange a group of processes in the same session. The child processes
     /// will be terminated, if `Session` dropped.
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// use gosh_runner::prelude::*;
+    /// 
+    /// let mut command = std::process::Command::new("vasp-program");
+    /// let mut session = command.spawn_session()?;
+    /// let session_handler = session.handler().clone();
+    /// session_handler.pause()?;
+    /// session_handler.resume()?;
+    /// session_handler.termiate()?;
+    /// session.child.wait()?;
+    /// ```
     pub struct Session<T> {
         pub child: T,
         session_handler: SessionHandler,
