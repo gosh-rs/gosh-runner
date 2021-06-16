@@ -30,14 +30,17 @@ pub use server::enter_main as server_enter_main;
 
 /// Some extension traits
 pub mod prelude {
-    pub use crate::process::ProcessGroupExt;
+    pub use crate::process::{ProcessGroupExt, SpawnSessionExt};
 }
+
+pub use process::{Session, SessionHandler};
 // pub:1 ends here
 
 // [[file:../runners.note::*docs][docs:1]]
-#[cfg(feature = "adhoc")] 
+#[cfg(feature = "adhoc")]
 /// Documentation for local development
 pub mod docs {
     pub use crate::job::*;
+    pub use crate::process::*;
 }
 // docs:1 ends here

@@ -69,7 +69,7 @@ mod impl_process_procfs {
         /// Construct from process ID
         pub fn from_pid(pid: u32) -> Result<Self> {
             let p = process::Process::new(pid as i32)?;
-            let create_time = p.stat()?.starttime;
+            let create_time = p.stat.starttime;
             let p = Self { inner: p, create_time };
             Ok(p)
         }
@@ -84,10 +84,9 @@ mod impl_process_procfs {
             self.inner.is_alive()
         }
 
-        /// Get the session Id of the process.
-        pub fn get_session_id(&self) -> Result<u32> {
-            let stat = self.inner.stat()?;
-            Ok(stat.session as u32)
+        /// Returns the session Id of the process.
+        pub fn session_id(&self) -> u32 {
+            self.inner.stat.session as u32
         }
 
         /// Get the working directory of the process.
@@ -110,9 +109,12 @@ mod impl_process_procfs {
 
         /// Test if process is paused
         pub fn is_paused(&self) -> bool {
-            if let Ok(status) = self.inner.status() {
-                // dbg!(self.get_cmdline());
-                status.state == "T (stopped)"
+            if let Ok(stat) = self.inner.stat() {
+                if let Ok(state) = stat.state() {
+                    state == procfs::process::ProcState::Stopped
+                } else {
+                    false
+                }
             } else {
                 false
             }
@@ -140,15 +142,15 @@ mod impl_process_procfs {
         let all = process::all_processes()?
             .into_iter()
             .filter_map(|p| {
-                if let Ok(stat) = p.stat() {
-                    if stat.session == id as i32 {
-                        return Some(Process {
-                            inner: p,
-                            create_time: stat.starttime,
-                        });
+                if p.stat.session == id as i32 {
+                    Process {
+                        create_time: p.stat.starttime,
+                        inner: p,
                     }
+                    .into()
+                } else {
+                    None
                 }
-                None
             })
             .collect();
         Ok(all)
@@ -159,8 +161,32 @@ mod impl_process_procfs {
 // [[file:../runners.note::*session][session:1]]
 mod session {
     use super::*;
+    use std::process::Child;
+    use std::process::ExitStatus;
 
-    /// Handle a group of processes in the same session.
+    /// Manange a group of processes in the same session. The child processes
+    /// will be terminated, if `Session` dropped.
+    pub struct Session<T> {
+        pub child: T,
+        session_handler: SessionHandler,
+    }
+
+    impl<T> Session<T> {
+        /// Returns a reference to `SessionHandler`.
+        pub fn handler(&self) -> &SessionHandler {
+            &self.session_handler
+        }
+    }
+
+    // Send SIGTERM to processes in the session on drop
+    impl<T> Drop for Session<T> {
+        fn drop(&mut self) {
+            let _ = self.session_handler.terminate();
+        }
+    }
+
+    /// Handle a group of processes in the same session, possible operations:
+    /// `pause`, `resume`, `terminate`
     #[derive(Debug, Clone)]
     pub struct SessionHandler {
         process: Option<Process>,
@@ -168,7 +194,8 @@ mod session {
 
     /// Create child process in new session
     pub trait SpawnSessionExt<T> {
-        fn spawn_session(&mut self) -> Result<(T, SessionHandler)>;
+        /// Spawn child process in new session.
+        fn spawn_session(&mut self) -> Result<Session<T>>;
     }
 
     impl SessionHandler {
@@ -177,7 +204,8 @@ mod session {
             Self { process }
         }
 
-        fn id(&self) -> Option<u32> {
+        /// Return process ID of the session leader.
+        pub fn id(&self) -> Option<u32> {
             self.process.as_ref().map(|p| p.id())
         }
 
@@ -215,14 +243,14 @@ mod session {
             self.send_signal("SIGSTOP")?;
             Ok(())
         }
-        
+
         /// Resume processes in the session.
         pub fn resume(&self) -> Result<()> {
             debug!("resume session {:?}", self.id());
             self.send_signal("SIGCONT")?;
             Ok(())
         }
-        
+
         /// Terminate processes in the session.
         pub fn terminate(&self) -> Result<()> {
             debug!("termate session {:?}", self.id());
@@ -235,23 +263,21 @@ mod session {
     }
 
     impl SpawnSessionExt<std::process::Child> for std::process::Command {
-        fn spawn_session(&mut self) -> Result<(std::process::Child, SessionHandler)> {
+        fn spawn_session(&mut self) -> Result<Session<std::process::Child>> {
             let child = self.new_process_group().spawn()?;
             let id = child.id();
             let session_handler = SessionHandler::from(id);
-            Ok((child, session_handler))
+            let s = Session { child, session_handler };
+            Ok(s)
         }
     }
-
     impl SpawnSessionExt<tokio::process::Child> for tokio::process::Command {
-        fn spawn_session(&mut self) -> Result<(tokio::process::Child, SessionHandler)> {
+        fn spawn_session(&mut self) -> Result<Session<tokio::process::Child>> {
             let child = self.new_process_group().spawn()?;
-            if let Some(id) = child.id() {
-                let session_handler = SessionHandler::from(id);
-                Ok((child, session_handler))
-            } else {
-                bail!("Spawned child process died?");
-            }
+            let id = child.id().ok_or(format_err!("no id: child process already exited"))?;
+            let session_handler = SessionHandler::from(id);
+            let s = Session { child, session_handler };
+            Ok(s)
         }
     }
 }
@@ -273,17 +299,18 @@ pub(crate) fn signal_processes_by_session_id(sid: u32, signal: &str) -> Result<(
 
 pub use impl_process_procfs::{get_processes_in_session, Process};
 pub use process_group::ProcessGroupExt;
-pub use session::{SessionHandler, SpawnSessionExt};
+pub use session::{Session, SessionHandler, SpawnSessionExt};
 // pub:1 ends here
 
 // [[file:../runners.note::*test][test:1]]
 #[test]
-fn test_spawn_session() -> Result<()> {
+fn test_spawn_session_std() -> Result<()> {
     use std::process::Command;
     gut::cli::setup_logger_for_test();
 
     let mut command = Command::new("scripts/test_runner.sh");
-    let (mut child, session_handler) = command.spawn_session()?;
+    let mut session = command.spawn_session()?;
+    let session_handler = session.handler();
 
     gut::utils::sleep(0.2);
     session_handler.pause()?;
@@ -298,7 +325,33 @@ fn test_spawn_session() -> Result<()> {
     gut::utils::sleep(0.2);
     session_handler.terminate()?;
     gut::utils::sleep(0.2);
-    assert!(child.try_wait().is_ok());
+    assert!(session.child.wait().is_ok());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_spawn_session_tokio() -> Result<()> {
+    use tokio::process::Command;
+
+    let mut command = Command::new("scripts/test_runner.sh");
+    let mut session = command.spawn_session()?;
+    let session_handler = session.handler();
+
+    gut::utils::sleep(0.2);
+    session_handler.pause()?;
+    for p in session_handler.get_processes()? {
+        assert!(p.is_paused());
+    }
+    gut::utils::sleep(0.2);
+    session_handler.resume()?;
+    for p in session_handler.get_processes()? {
+        assert!(!p.is_paused());
+    }
+    gut::utils::sleep(0.2);
+    session_handler.terminate()?;
+    gut::utils::sleep(0.2);
+    assert!(session.child.wait().await.is_ok());
 
     Ok(())
 }

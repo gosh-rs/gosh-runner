@@ -509,13 +509,22 @@ mod session {
     use super::*;
 
     pub use crate::process::SessionHandler;
+    use crate::process::SpawnSessionExt;
     use std::process::{Child, Command};
 
-    pub struct Session {}
+    pub struct Session {
+        command: Command,
+        child: Option<Child>,
+        session_handler: Option<SessionHandler>,
+    }
 
     impl Session {
         pub fn new(command: Command) -> Self {
-            todo!();
+            Self {
+                command,
+                child: None,
+                session_handler: None,
+            }
         }
 
         pub fn interact(&mut self, input: &str, read_pattern: &str) -> Result<String> {
@@ -527,7 +536,16 @@ mod session {
         }
 
         pub fn get_handler(&self) -> Option<SessionHandler> {
-            todo!();
+            self.session_handler.clone()
+        }
+    }
+
+    // Send SIGTERM to processes in the session on drop
+    impl Drop for Session {
+        fn drop(&mut self) {
+            if let Some(h) = &self.session_handler {
+                let _ = h.terminate();
+            }
         }
     }
 }
