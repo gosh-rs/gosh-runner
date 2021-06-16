@@ -65,9 +65,9 @@ impl Job {
 }
 // job:1 ends here
 
-// [[file:../runners.note::*session][session:1]]
-/// Session represents a submitted `Job`
-pub struct Session {
+// [[file:../runners.note::*computation][computation:1]]
+/// Computation represents a submitted `Job`
+pub struct Computation {
     job: Job,
 
     // command session. The drop order is above Tempdir
@@ -76,10 +76,10 @@ pub struct Session {
     /// The working directory of computation
     wrk_dir: TempDir,
 }
-// session:1 ends here
+// computation:1 ends here
 
 // [[file:../runners.note::*paths][paths:1]]
-impl Session {
+impl Computation {
     /// The full path to the working directory for running the job.
     pub fn wrk_dir(&self) -> &Path {
         self.wrk_dir.path()
@@ -111,19 +111,20 @@ impl Session {
 use tokio::io::AsyncWriteExt;
 
 impl Job {
-    fn submit(self) -> Session {
-        Session::new(self)
+    /// Submit the job and turn it into Computation.
+    pub fn submit(self) -> Computation {
+        Computation::new(self)
     }
 }
 
-impl Session {
+impl Computation {
     fn new(job: Job) -> Self {
         use std::fs::File;
         use std::os::unix::fs::OpenOptionsExt;
 
         // create working directory in scratch space.
         let wdir = tempfile::TempDir::new_in(".").expect("temp dir");
-        let session = Session {
+        let session = Computation {
             job,
             wrk_dir: wdir.into(),
             session: None,
@@ -226,7 +227,7 @@ impl Session {
 // core:1 ends here
 
 // [[file:../runners.note::*extra][extra:1]]
-impl Session {
+impl Computation {
     /// Return a list of full path to extra files required for computation.
     pub fn extra_files(&self) -> Vec<PathBuf> {
         self.job.extra_files.iter().map(|f| self.wrk_dir().join(f)).collect()
@@ -413,7 +414,7 @@ mod impl_jobs_slotmap {
     pub(super) type JobKey = DefaultKey;
 
     pub struct Jobs {
-        inner: SlotMap<DefaultKey, Session>,
+        inner: SlotMap<DefaultKey, Computation>,
         mapping: BiMap<usize, JobKey>,
     }
 
@@ -437,7 +438,7 @@ mod impl_jobs_slotmap {
         }
 
         /// Insert a new Job into database, returning Id for later operations.
-        pub fn insert(&mut self, job: Session) -> Id {
+        pub fn insert(&mut self, job: Computation) -> Id {
             let k = self.inner.insert(job);
             let n = self.mapping.len() + 1;
             if let Err(e) = self.mapping.insert_no_overwrite(n, k) {
@@ -470,7 +471,7 @@ mod impl_jobs_slotmap {
         }
 
         /// Iterator over a tuple of `Id` and `Job`.
-        pub fn iter(&self) -> impl Iterator<Item = (Id, &Session)> {
+        pub fn iter(&self) -> impl Iterator<Item = (Id, &Computation)> {
             self.inner.iter().map(move |(k, v)| (self.to_id(k), v))
         }
 
@@ -484,7 +485,7 @@ mod impl_jobs_slotmap {
     }
 
     impl std::ops::Index<JobKey> for Jobs {
-        type Output = Session;
+        type Output = Computation;
 
         fn index(&self, key: JobKey) -> &Self::Output {
             &self.inner[key]
