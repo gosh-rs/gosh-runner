@@ -1,8 +1,6 @@
 // [[file:../runners.note::*mods][mods:1]]
 mod client;
-mod job;
 mod local;
-mod process;
 mod server;
 mod session;
 // mods:1 ends here
@@ -33,7 +31,8 @@ pub mod prelude {
     pub use crate::process::SpawnSessionExt;
 }
 
-pub use process::{Session, SessionHandler};
+pub mod job;
+pub mod process;
 // pub:1 ends here
 
 // [[file:../runners.note::*docs][docs:1]]

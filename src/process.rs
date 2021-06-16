@@ -1,7 +1,7 @@
 // [[file:../runners.note::*imports][imports:1]]
 //! # Example
 //!
-//! ```
+//! ```rust, no_run
 //! use gosh_runner::prelude::*;
 //! 
 //! let mut command = std::process::Command::new("vasp-program");
@@ -9,8 +9,9 @@
 //! let session_handler = session.handler().clone();
 //! session_handler.pause()?;
 //! session_handler.resume()?;
-//! session_handler.termiate()?;
+//! session_handler.terminate()?;
 //! session.child.wait()?;
+//! # Ok::<(), anyhow::Error>(())
 //! ```
 
 use crate::common::*;
@@ -183,7 +184,7 @@ mod session {
     /// 
     /// # Example
     ///
-    /// ```
+    /// ```rust, no_run
     /// use gosh_runner::prelude::*;
     /// 
     /// let mut command = std::process::Command::new("vasp-program");
@@ -191,8 +192,9 @@ mod session {
     /// let session_handler = session.handler().clone();
     /// session_handler.pause()?;
     /// session_handler.resume()?;
-    /// session_handler.termiate()?;
+    /// session_handler.terminate()?;
     /// session.child.wait()?;
+    /// # Ok::<(), anyhow::Error>(())
     /// ```
     pub struct Session<T> {
         pub child: T,
