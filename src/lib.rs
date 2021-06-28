@@ -1,4 +1,5 @@
 // [[file:../runners.note::*mods][mods:1]]
+#[cfg(feature = "client")]
 mod client;
 mod local;
 mod server;
@@ -21,7 +22,9 @@ pub(crate) mod common {
 }
 
 // for command line binaries
+#[cfg(feature = "client")]
 pub use client::enter_main as client_enter_main;
+#[cfg(feature = "client")]
 pub use client::Client;
 pub use local::enter_main as local_enter_main;
 pub use server::enter_main as server_enter_main;

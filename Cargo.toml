@@ -13,7 +13,8 @@ tempfile = "3.0"
 nix = "0.21"
 procfs = {version = "0.9"} 
 tokio = { version="1.6", features=["full"]}
-reqwest = { version="0.11", default-features = false, features=["json", "blocking", "rustls-tls"]}
+reqwest = { version="0.11", default-features = false, features=["json", "blocking", "rustls-tls"], optional=true}
+# reqwest = { version="0.11", default-features = false, features=["json", "blocking"]}
 warp = { version = "0.3", package = "warp" }
 bytes = { version = "1" }
 slab = "0.4"
@@ -34,4 +35,5 @@ anyhow = "1"
 
 [features]
 adhoc = []
+client = ["reqwest"]
 # cargo:1 ends here
