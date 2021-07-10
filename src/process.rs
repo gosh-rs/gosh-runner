@@ -318,10 +318,10 @@ mod session {
 // [[file:../runners.note::*pub][pub:1]]
 /// Signal all child processes in session `sid`
 pub(crate) fn signal_processes_by_session_id(sid: u32, signal: &str) -> Result<()> {
-    info!("Send signal {} to processes in session {}", signal, sid);
+    debug!("Send signal {} to processes in session {}", signal, sid);
 
     let pp = get_processes_in_session(sid)?;
-    info!("found {} processes in session {}", pp.len(), sid);
+    debug!("found {} processes in session {}", pp.len(), sid);
     for p in pp {
         p.send_signal(signal)?;
     }

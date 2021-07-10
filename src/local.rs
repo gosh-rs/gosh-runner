@@ -77,3 +77,38 @@ pub fn enter_main() -> Result<()> {
     RunnerCli::enter_main(std::env::args())
 }
 // cli:1 ends here
+
+// [[file:../runners.note::*ctrlc][ctrlc:1]]
+use gut::prelude::*;
+
+/// Run main process with ctrl-c handler
+pub fn ctrlc_enter_main(enter_main: fn() -> Result<()>) -> Result<()> {
+    // Create the runtime
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    // Execute the future, blocking the current thread until completion
+    rt.block_on(ctrlc_enter_main_(enter_main))?;
+
+    Ok(())
+}
+
+async fn ctrlc_enter_main_(enter_main: fn() -> Result<()>) -> Result<()> {
+    let ctrl_c = tokio::signal::ctrl_c();
+    let main_task = tokio::task::spawn_blocking(move || {
+        // This is running on a blocking thread.
+        enter_main()
+    });
+
+    tokio::select! {
+        result = main_task => {
+            result?;
+            info!("Done");
+        }
+        result = ctrl_c => {
+            result?;
+            info!("Received SIGINT, exiting");
+        }
+    }
+
+    Ok(())
+}
+// ctrlc:1 ends here

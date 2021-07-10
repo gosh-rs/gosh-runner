@@ -26,6 +26,7 @@ pub(crate) mod common {
 pub use client::enter_main as client_enter_main;
 #[cfg(feature = "client")]
 pub use client::Client;
+pub use local::ctrlc_enter_main;
 pub use local::enter_main as local_enter_main;
 pub use server::enter_main as server_enter_main;
 
