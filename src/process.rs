@@ -175,7 +175,7 @@ mod impl_process_procfs {
 }
 // process:1 ends here
 
-// [[file:../runners.note::*session][session:1]]
+// [[file:../runners.note::49b16e9d][49b16e9d]]
 mod session {
     use super::*;
     use std::process::Child;
@@ -285,7 +285,7 @@ mod session {
 
         /// Terminate processes in the session.
         pub fn terminate(&self) -> Result<()> {
-            debug!("termate session {:?}", self.id());
+            debug!("terminate session {:?}", self.id());
             // If process was paused, terminate it directly could result a deadlock or zombie.
             self.send_signal("SIGCONT")?;
             gut::utils::sleep(0.2);
@@ -313,7 +313,7 @@ mod session {
         }
     }
 }
-// session:1 ends here
+// 49b16e9d ends here
 
 // [[file:../runners.note::*pub][pub:1]]
 /// Signal all child processes in session `sid`

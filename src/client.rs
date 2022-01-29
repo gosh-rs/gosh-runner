@@ -7,7 +7,8 @@ use crate::server::*;
 use crate::job::{Job, JobId};
 // 310bb968 ends here
 
-// [[file:../runners.note::*base][base:1]]
+// [[file:../runners.note::c49b4af1][c49b4af1]]
+/// The client side for remote computation
 #[derive(Clone, Debug)]
 pub struct Client {
     server_addr: String,
@@ -33,9 +34,9 @@ impl Client {
         Self { server_addr }
     }
 }
-// base:1 ends here
+// c49b4af1 ends here
 
-// [[file:../runners.note::*core][core:1]]
+// [[file:../runners.note::f2bffcbd][f2bffcbd]]
 impl Client {
     pub fn server_address(&self) -> &str {
         self.server_addr.as_ref()
@@ -144,10 +145,10 @@ impl Client {
         Ok(())
     }
 }
-// core:1 ends here
+// f2bffcbd ends here
 
 // [[file:../runners.note::899c0fa6][899c0fa6]]
-use gosh_core::gut1::{cli::*, prelude::*};
+use gut::{cli::*, prelude::*};
 
 /// A commander for interactive interpreter
 #[derive(Default)]
@@ -161,82 +162,82 @@ impl Command {
     }
 }
 
-#[derive(StructOpt, Debug)]
-#[structopt(setting = structopt::clap::AppSettings::VersionlessSubcommands)]
+#[derive(Parser)]
+// #[clap(setting = clap::clap::AppSettings::VersionlessSubcommands)]
 enum Action {
     /// Quit REPL shell.
-    #[structopt(name = "quit", alias = "q", alias = "exit")]
+    #[clap(name = "quit", alias = "q", alias = "exit")]
     Quit {},
 
     /// Show available commands.
-    #[structopt(name = "help", alias = "h", alias = "?")]
+    #[clap(name = "help", alias = "h", alias = "?")]
     Help {},
 
     /// List job/jobs submited in the server.
-    #[structopt(name = "ls", alias = "l", alias = "ll")]
+    #[clap(name = "ls", alias = "l", alias = "ll")]
     List {
         /// Job id
-        #[structopt(name = "JOB-ID")]
+        #[clap(name = "JOB-ID")]
         id: Option<JobId>,
     },
 
     /// Request to delete a job from the server.
-    #[structopt(name = "delete", alias = "del")]
+    #[clap(name = "delete", alias = "del")]
     Delete {
         /// Job id
-        #[structopt(name = "JOB-ID")]
+        #[clap(name = "JOB-ID")]
         id: JobId,
     },
 
     /// Wait until job is done.
-    #[structopt(name = "wait")]
+    #[clap(name = "wait")]
     Wait {
         /// Job id
-        #[structopt(name = "JOB-ID")]
+        #[clap(name = "JOB-ID")]
         id: JobId,
     },
 
     /// Submit a job to the server.
-    #[structopt(name = "submit", alias = "sub")]
+    #[clap(name = "submit", alias = "sub")]
     Submit {
         /// Set script file.
-        #[structopt(name = "SCRIPT-FILE", parse(from_os_str))]
+        #[clap(name = "SCRIPT-FILE", parse(from_os_str))]
         script_file: PathBuf,
     },
 
     /// Download a job file from the server.
-    #[structopt(name = "get", alias = "download")]
+    #[clap(name = "get", alias = "download")]
     Get {
         /// Job file name to be downloaded from the server.
-        #[structopt(name = "FILE-NAME")]
+        #[clap(name = "FILE-NAME")]
         file_name: String,
 
         /// Job id
-        #[structopt(name = "JOB-ID", long = "id")]
+        #[clap(name = "JOB-ID", long = "id")]
         id: JobId,
     },
 
     ///Shutdown the remote server.
-    #[structopt(name = "shutdown")]
+    #[clap(name = "shutdown")]
     Shutdown {},
 
     /// Upload a job file to the server.
-    #[structopt(name = "put", alias = "upload")]
+    #[clap(name = "put", alias = "upload")]
     Put {
         /// Job file name to be uploaded to the server.
-        #[structopt(name = "FILE-NAME")]
+        #[clap(name = "FILE-NAME")]
         file_name: String,
 
         /// Job id
-        #[structopt(name = "JOB-ID", long = "id")]
+        #[clap(name = "JOB-ID", long = "id")]
         id: JobId,
     },
 
     /// Connect to app server.
-    #[structopt(name = "connect")]
+    #[clap(name = "connect")]
     Connect {
         /// Application server.
-        #[structopt(name = "SERVER-ADDRESS")]
+        #[clap(name = "SERVER-ADDRESS")]
         server_address: Option<String>,
     },
 }
@@ -330,10 +331,10 @@ pub fn enter_main() -> Result<()> {
             let mut args: Vec<_> = line.split_whitespace().collect();
             args.insert(0, "app>");
 
-            match Action::from_iter_safe(&args) {
+            match Action::try_parse_from(&args) {
                 // show subcommands
                 Ok(Action::Help {}) => {
-                    let mut app = Action::clap();
+                    let mut app = Action::into_app();
                     app.print_help();
                     println!("");
                 }
@@ -351,7 +352,7 @@ pub fn enter_main() -> Result<()> {
 
                 // show subcommand usage
                 Err(e) => {
-                    println!("{}", e.message);
+                    e.print()?;
                 }
             }
         } else {

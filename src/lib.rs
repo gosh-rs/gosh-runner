@@ -1,3 +1,17 @@
+// [[file:../runners.note::16bab924][16bab924]]
+use gosh_core::*;
+use gut::prelude::*;
+
+use std::path::{Path, PathBuf};
+
+/// Return current timestamp string
+fn timestamp_now() -> String {
+    use chrono::prelude::*;
+    let now: DateTime<Local> = Local::now();
+    format!("{}", now)
+}
+// 16bab924 ends here
+
 // [[file:../runners.note::*mods][mods:1]]
 #[cfg(feature = "client")]
 mod client;
@@ -7,23 +21,6 @@ mod session;
 // mods:1 ends here
 
 // [[file:../runners.note::d8e4f605][d8e4f605]]
-// shared imports between mods
-mod common {
-    // FIXME: remove
-    pub use gosh_core::*;
-
-    pub use gut::prelude::*;
-    pub use std::path::{Path, PathBuf};
-
-    /// Return current timestamp string
-    pub fn timestamp_now() -> String {
-        use chrono::prelude::*;
-        let now: DateTime<Local> = Local::now();
-        format!("{}", now)
-    }
-}
-use common::*;
-
 // for command line binaries
 #[cfg(feature = "client")]
 pub use client::enter_main as client_enter_main;
@@ -44,11 +41,22 @@ pub mod process;
 pub mod stop;
 // d8e4f605 ends here
 
-// [[file:../runners.note::*docs][docs:1]]
+// [[file:../runners.note::c6e9d2bf][c6e9d2bf]]
 #[cfg(feature = "adhoc")]
 /// Documentation for local development
 pub mod docs {
-    pub use crate::job::*;
-    pub use crate::process::*;
+    macro_rules! export_doc {
+        ($l:ident) => {
+            pub mod $l {
+                pub use crate::$l::*;
+            }
+        };
+    }
+
+    export_doc!(job);
+    export_doc!(process);
+
+    #[cfg(feature = "client")]
+    export_doc!(client);
 }
-// docs:1 ends here
+// c6e9d2bf ends here

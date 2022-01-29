@@ -1,4 +1,5 @@
 // [[file:../runners.note::809ad587][809ad587]]
+//! A simple file based handler for user interruption.
 use super::*;
 use std::path::PathBuf;
 

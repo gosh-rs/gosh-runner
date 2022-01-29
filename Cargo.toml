@@ -11,7 +11,7 @@ structopt = "0.3"
 chrono = "0.4"
 tempfile = "3.0"
 nix = "0.21"
-procfs = {version = "0.9"} 
+procfs = {version = "0.9"}
 tokio = { version="1.6", features=["full"]}
 reqwest = { version="0.11", default-features = false, features=["json", "blocking", "rustls-tls"], optional=true}
 # reqwest = { version="0.11", default-features = false, features=["json", "blocking"]}
@@ -25,6 +25,7 @@ duct = "0.13"
 linefeed = "0.6"
 shared_child = "0.3"
 gosh-core = { version = "0.0.2" }
+clap = {version="3", features = ["derive"]}
 # procspawn = "0.8"
 # futures = "0.1"
 # heim = "0.0.8"
