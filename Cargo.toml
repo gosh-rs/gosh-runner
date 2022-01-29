@@ -1,8 +1,8 @@
-# [[file:runners.note::*cargo][cargo:1]]
+# [[file:runners.note::4f297f9c][4f297f9c]]
 [package]
 name = "gosh-runner"
 version = "0.0.10"
-edition = "2018"
+edition = "2021"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
@@ -36,4 +36,4 @@ anyhow = "1"
 [features]
 adhoc = []
 client = ["reqwest"]
-# cargo:1 ends here
+# 4f297f9c ends here

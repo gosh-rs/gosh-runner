@@ -6,7 +6,7 @@ mod server;
 mod session;
 // mods:1 ends here
 
-// [[file:../runners.note::*pub][pub:1]]
+// [[file:../runners.note::d8e4f605][d8e4f605]]
 // shared imports between mods
 pub(crate) mod common {
     pub use gosh_core::*;
@@ -37,7 +37,8 @@ pub mod prelude {
 
 pub mod job;
 pub mod process;
-// pub:1 ends here
+pub mod stop;
+// d8e4f605 ends here
 
 // [[file:../runners.note::*docs][docs:1]]
 #[cfg(feature = "adhoc")]
