@@ -1,11 +1,11 @@
-// [[file:../runners.note::*imports][imports:1]]
+// [[file:../runners.note::310bb968][310bb968]]
 use std::path::{Path, PathBuf};
 
-use crate::common::*;
+use super::*;
 use crate::server::*;
 
 use crate::job::{Job, JobId};
-// imports:1 ends here
+// 310bb968 ends here
 
 // [[file:../runners.note::*base][base:1]]
 #[derive(Clone, Debug)]
@@ -146,8 +146,8 @@ impl Client {
 }
 // core:1 ends here
 
-// [[file:../runners.note::*pub/cli][pub/cli:1]]
-use gosh_core::gut::{cli::*, prelude::*};
+// [[file:../runners.note::899c0fa6][899c0fa6]]
+use gosh_core::gut1::{cli::*, prelude::*};
 
 /// A commander for interactive interpreter
 #[derive(Default)]
@@ -361,4 +361,4 @@ pub fn enter_main() -> Result<()> {
 
     Ok(())
 }
-// pub/cli:1 ends here
+// 899c0fa6 ends here

@@ -1,4 +1,4 @@
-// [[file:../runners.note::*imports][imports:1]]
+// [[file:../runners.note::312de6f2][312de6f2]]
 //! For manage processes
 //!
 //! # Example
@@ -16,8 +16,8 @@
 //! # Ok::<(), anyhow::Error>(())
 //! ```
 
-use crate::common::*;
-// imports:1 ends here
+use super::*;
+// 312de6f2 ends here
 
 // [[file:../runners.note::*process group][process group:1]]
 mod process_group {
@@ -334,11 +334,11 @@ pub use process_group::ProcessGroupExt;
 pub use session::{Session, SessionHandler, SpawnSessionExt};
 // pub:1 ends here
 
-// [[file:../runners.note::*test][test:1]]
+// [[file:../runners.note::3ceaa6e9][3ceaa6e9]]
 #[test]
 fn test_spawn_session_std() -> Result<()> {
     use std::process::Command;
-    gut::cli::setup_logger_for_test();
+    gut1::cli::setup_logger_for_test();
 
     let mut command = Command::new("scripts/test_runner.sh");
     let mut session = command.spawn_session()?;
@@ -387,4 +387,4 @@ async fn test_spawn_session_tokio() -> Result<()> {
 
     Ok(())
 }
-// test:1 ends here
+// 3ceaa6e9 ends here

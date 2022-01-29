@@ -1,11 +1,10 @@
-// [[file:../runners.note::*imports][imports:1]]
+// [[file:../runners.note::9b1f2893][9b1f2893]]
 //! For handling running task/job
-
-use crate::common::*;
+use super::*;
 
 use serde::{Deserialize, Serialize};
 use tempfile::{tempdir, tempdir_in, TempDir};
-// imports:1 ends here
+// 9b1f2893 ends here
 
 // [[file:../runners.note::*job][job:1]]
 /// Represents a computational job inputted by user.
@@ -65,7 +64,7 @@ impl Job {
 }
 // job:1 ends here
 
-// [[file:../runners.note::*computation][computation:1]]
+// [[file:../runners.note::*base][base:1]]
 /// Computation represents a submitted `Job`
 pub struct Computation {
     job: Job,
@@ -76,7 +75,7 @@ pub struct Computation {
     /// The working directory of computation
     wrk_dir: TempDir,
 }
-// computation:1 ends here
+// base:1 ends here
 
 // [[file:../runners.note::*paths][paths:1]]
 impl Computation {

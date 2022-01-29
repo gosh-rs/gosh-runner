@@ -1,9 +1,10 @@
-// [[file:../runners.note::*imports][imports:1]]
-use crate::common::*;
+// [[file:../runners.note::ef8e07e8][ef8e07e8]]
+use super::*;
 use crate::session::Session;
-// imports:1 ends here
+use gut1 as gut;
+// ef8e07e8 ends here
 
-// [[file:../runners.note::*cli][cli:1]]
+// [[file:../runners.note::bff78206][bff78206]]
 use gut::cli::*;
 
 /// A local runner that can make graceful exit
@@ -76,7 +77,7 @@ pub fn enter_main() -> Result<()> {
     // run in a normal way
     RunnerCli::enter_main(std::env::args())
 }
-// cli:1 ends here
+// bff78206 ends here
 
 // [[file:../runners.note::*ctrlc][ctrlc:1]]
 use gut::prelude::*;

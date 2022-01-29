@@ -1,10 +1,11 @@
-// [[file:../runners.note::*imports][imports:1]]
+// [[file:../runners.note::ba55aeaf][ba55aeaf]]
 // #![deny(warnings)]
-use crate::common::*;
+use super::*;
 use crate::job::{Db, Job, JobId};
+use gut1 as gut;
 
 pub const DEFAULT_SERVER_ADDRESS: &str = "127.0.0.1:3030";
-// imports:1 ends here
+// ba55aeaf ends here
 
 // [[file:../runners.note::*server][server:1]]
 use std::net::{SocketAddr, ToSocketAddrs};
@@ -291,8 +292,7 @@ pub(self) async fn bind(addr: &str) {
 }
 // pub/fn:1 ends here
 
-// [[file:../runners.note::*pub/cli][pub/cli:1]]
-use gosh_core::gut;
+// [[file:../runners.note::81ef99e9][81ef99e9]]
 use structopt::*;
 
 /// Application server for remote calculations.
@@ -325,4 +325,4 @@ pub async fn enter_main() -> Result<()> {
 
     Ok(())
 }
-// pub/cli:1 ends here
+// 81ef99e9 ends here

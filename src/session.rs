@@ -1,11 +1,11 @@
-// [[file:../runners.note::*imports][imports:1]]
-use crate::common::*;
+// [[file:../runners.note::7507fa23][7507fa23]]
+use super::*;
 
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 use tokio::signal::ctrl_c;
 use tokio::time::{sleep as delay_for, Duration};
-// imports:1 ends here
+// 7507fa23 ends here
 
 // [[file:../runners.note::*base][base:1]]
 use crate::process::SpawnSessionExt;

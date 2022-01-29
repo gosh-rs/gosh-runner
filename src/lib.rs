@@ -8,8 +8,10 @@ mod session;
 
 // [[file:../runners.note::d8e4f605][d8e4f605]]
 // shared imports between mods
-pub(crate) mod common {
+mod common {
+    // FIXME: remove
     pub use gosh_core::*;
+
     pub use gut::prelude::*;
     pub use std::path::{Path, PathBuf};
 
@@ -20,6 +22,7 @@ pub(crate) mod common {
         format!("{}", now)
     }
 }
+use common::*;
 
 // for command line binaries
 #[cfg(feature = "client")]
@@ -35,6 +38,7 @@ pub mod prelude {
     pub use crate::process::SpawnSessionExt;
 }
 
+pub mod cli;
 pub mod job;
 pub mod process;
 pub mod stop;
