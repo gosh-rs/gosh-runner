@@ -338,7 +338,7 @@ pub use session::{Session, SessionHandler, SpawnSessionExt};
 #[test]
 fn test_spawn_session_std() -> Result<()> {
     use std::process::Command;
-    gut1::cli::setup_logger_for_test();
+    gut::cli::setup_logger_for_test();
 
     let mut command = Command::new("scripts/test_runner.sh");
     let mut session = command.spawn_session()?;
