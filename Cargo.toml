@@ -13,19 +13,16 @@ tempfile = "3.0"
 nix = "0.21"
 procfs = {version = "0.9"}
 tokio = { version="1.6", features=["full"]}
-reqwest = { version="0.11", default-features = false, features=["json", "blocking", "rustls-tls"], optional=true}
-# reqwest = { version="0.11", default-features = false, features=["json", "blocking"]}
-warp = { version = "0.3", package = "warp" }
-bytes = { version = "1" }
 slab = "0.4"
 slotmap = { version = "1.0", features = ["serde"] }
 bimap = { version = "0.6", features = ["serde"] }
 libc = "0.2"
 duct = "0.13"
-linefeed = "0.6"
 shared_child = "0.3"
-gosh-core = { version = "0.0.2" }
+gosh-core = { version = "0.0.3" }
 clap = {version="3", features = ["derive"]}
+bytes = { version = "1" }
+
 # procspawn = "0.8"
 # futures = "0.1"
 # heim = "0.0.8"
@@ -36,5 +33,5 @@ anyhow = "1"
 
 [features]
 adhoc = []
-client = ["reqwest"]
+# client = ["reqwest"]
 # 4f297f9c ends here

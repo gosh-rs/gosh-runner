@@ -12,24 +12,11 @@ fn timestamp_now() -> String {
 }
 // 16bab924 ends here
 
-// [[file:../runners.note::*mods][mods:1]]
-#[cfg(feature = "client")]
-mod client;
-mod local;
-mod server;
+// [[file:../runners.note::9fd14bf8][9fd14bf8]]
 mod session;
-// mods:1 ends here
+// 9fd14bf8 ends here
 
 // [[file:../runners.note::d8e4f605][d8e4f605]]
-// for command line binaries
-#[cfg(feature = "client")]
-pub use client::enter_main as client_enter_main;
-#[cfg(feature = "client")]
-pub use client::Client;
-pub use local::ctrlc_enter_main;
-pub use local::enter_main as local_enter_main;
-pub use server::enter_main as server_enter_main;
-
 /// Some extension traits
 pub mod prelude {
     pub use crate::process::SpawnSessionExt;
@@ -55,8 +42,6 @@ pub mod docs {
 
     export_doc!(job);
     export_doc!(process);
-
-    #[cfg(feature = "client")]
-    export_doc!(client);
+    export_doc!(session);
 }
 // c6e9d2bf ends here

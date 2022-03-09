@@ -1,4 +1,5 @@
 // [[file:../runners.note::7507fa23][7507fa23]]
+//! Manage a group of processes in a session
 use super::*;
 
 use tokio::io::AsyncWriteExt;
@@ -7,10 +8,11 @@ use tokio::signal::ctrl_c;
 use tokio::time::{sleep as delay_for, Duration};
 // 7507fa23 ends here
 
-// [[file:../runners.note::*base][base:1]]
+// [[file:../runners.note::1520aa92][1520aa92]]
 use crate::process::SpawnSessionExt;
 
-pub(crate) struct Session {
+/// Manage a group of processes in a session
+pub struct Session {
     /// Arguments that will be passed to `program`
     rest: Vec<String>,
 
@@ -71,7 +73,7 @@ impl Session {
         self
     }
 }
-// base:1 ends here
+// 1520aa92 ends here
 
 // [[file:../runners.note::*core][core:1]]
 impl Session {

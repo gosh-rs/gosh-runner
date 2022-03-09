@@ -1,10 +1,9 @@
-// [[file:../runners.note::ef8e07e8][ef8e07e8]]
+// [[file:../../runners.note::ef8e07e8][ef8e07e8]]
 use super::*;
 use crate::session::Session;
-use gut1 as gut;
 // ef8e07e8 ends here
 
-// [[file:../runners.note::bff78206][bff78206]]
+// [[file:../../runners.note::bff78206][bff78206]]
 use gut::cli::*;
 
 /// A local runner that can make graceful exit
@@ -14,7 +13,7 @@ struct RunnerCli {
     verbose: gut::cli::Verbosity,
 
     /// Job timeout in seconds. The default timeout is 30 days.
-    #[structopt(long = "timeout", short = "t")]
+    #[structopt(long = "timeout", short = 't')]
     timeout: Option<u32>,
 
     /// Command line to call a program
@@ -44,7 +43,7 @@ impl RunnerCli {
     }
 }
 
-pub fn enter_main() -> Result<()> {
+pub fn local_enter_main() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
     assert!(args.len() >= 1, "{:?}", args);
     // The path to symlink file that invoking the real program
@@ -79,7 +78,7 @@ pub fn enter_main() -> Result<()> {
 }
 // bff78206 ends here
 
-// [[file:../runners.note::*ctrlc][ctrlc:1]]
+// [[file:../../runners.note::*ctrlc][ctrlc:1]]
 use gut::prelude::*;
 
 /// Run main process with ctrl-c handler

@@ -261,7 +261,7 @@ impl Computation {
 }
 // extra:1 ends here
 
-// [[file:../runners.note::*core][core:1]]
+// [[file:../runners.note::f4436dc6][f4436dc6]]
 mod db {
     use super::*;
 
@@ -398,7 +398,7 @@ mod db {
         }
     }
 }
-// core:1 ends here
+// f4436dc6 ends here
 
 // [[file:../runners.note::*slotmap][slotmap:1]]
 mod impl_jobs_slotmap {
