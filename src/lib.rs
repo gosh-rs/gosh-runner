@@ -14,10 +14,10 @@ fn timestamp_now() -> String {
 
 // [[file:../runners.note::9fd14bf8][9fd14bf8]]
 pub mod cli;
+pub mod interactive;
 pub mod job;
 pub mod process;
 pub mod stop;
-pub mod interactive;
 
 mod session;
 
