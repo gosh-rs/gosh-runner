@@ -74,6 +74,16 @@ pub fn remove_path(path_key: &str, new_path: &str) -> String {
 // 8e91b7e1 ends here
 
 // [[file:../../runners.note::b185bee5][b185bee5]]
+fn show_available_modules(apps_root_dir: &Path) -> Result<()> {
+    for entry in apps_root_dir.read_dir()? {
+        let path = entry?.path();
+        if path.is_dir() && path.join(".envrc").is_file() {
+            eprintln!("{} => {path:?}", path.file_name().unwrap().to_string_lossy());
+        }
+    }
+    Ok(())
+}
+
 fn set_module_env_vars(apps_root_dir: &Path, module_name: &str, remove: bool) -> Result<String> {
     let mod_root = apps_root_dir.join(module_name);
     let mod_bin = mod_root.join("bin");
@@ -129,6 +139,8 @@ enum AppsOp {
     Load,
     /// Unload module environment variables
     Unload,
+    /// Show available modules
+    Avail,
 }
 
 /// A shell environment manager as a poor-man's modulefiles (for bash only now)
@@ -142,7 +154,7 @@ pub struct Apps {
     action: AppsOp,
 
     /// The requested module
-    module: String,
+    module: Option<String>,
 }
 
 impl Apps {
@@ -153,14 +165,17 @@ impl Apps {
         let apps_root_dir = std::env::var("BBM_APPS_DIR").unwrap_or("/share/apps".into());
         match args.action {
             AppsOp::Load => {
-                let bash_script = set_module_env_vars(apps_root_dir.as_ref(), &args.module, false)?;
+                let bash_script = set_module_env_vars(apps_root_dir.as_ref(), &args.module.unwrap(), false)?;
                 debug!("Load env vars in bash:\n{bash_script}");
                 println!("{bash_script}");
             }
             AppsOp::Unload => {
-                let bash_script = set_module_env_vars(apps_root_dir.as_ref(), &args.module, true)?;
+                let bash_script = set_module_env_vars(apps_root_dir.as_ref(), &args.module.unwrap(), true)?;
                 debug!("Unload env vars in bash:\n{bash_script}");
                 println!("{bash_script}");
+            }
+            AppsOp::Avail => {
+                show_available_modules(apps_root_dir.as_ref())?;
             }
         }
 
