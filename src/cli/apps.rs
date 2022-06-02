@@ -86,7 +86,7 @@ fn set_module_env_vars(apps_root_dir: &Path, module_name: &str, remove: bool) ->
         } else {
             prepend_path("PATH", &format!("{}", mod_bin.display()))
         };
-        writeln!(&mut lines, "{line}")?;
+        lines.push_str(&format!("{line};"));
     }
 
     // LD_LIBRARY_PATH
@@ -98,8 +98,18 @@ fn set_module_env_vars(apps_root_dir: &Path, module_name: &str, remove: bool) ->
             } else {
                 prepend_path(path, &format!("{}", mod_lib.display()))
             };
-            writeln!(&mut lines, "{line}")?;
+            lines.push_str(&format!("{line};"));
         }
+    }
+
+    let mod_envrc = mod_root.join(".envrc");
+    if mod_envrc.is_file() {
+        info!("load .envrc {mod_envrc:?}");
+        let dir = mod_root.shell_escape_lossy();
+        // source .envrc in module's root dir
+        lines.push_str(&format!("pushd {dir};"));
+        lines.push_str("source .envrc;");
+        lines.push_str("popd;")
     }
 
     Ok(lines)
@@ -123,7 +133,11 @@ enum AppsOp {
 
 /// A shell environment manager as a poor-man's modulefiles (for bash only now)
 #[derive(Parser)]
+#[clap(author, version, about)]
 pub struct Apps {
+    #[clap(flatten)]
+    verbose: gut::cli::Verbosity,
+
     #[clap(arg_enum)]
     action: AppsOp,
 
@@ -134,15 +148,18 @@ pub struct Apps {
 impl Apps {
     pub fn enter_main() -> Result<()> {
         let args = Self::parse();
+        args.verbose.setup_logger();
 
         let apps_root_dir = std::env::var("BBM_APPS_DIR").unwrap_or("/share/apps".into());
         match args.action {
             AppsOp::Load => {
                 let bash_script = set_module_env_vars(apps_root_dir.as_ref(), &args.module, false)?;
+                debug!("Load env vars in bash:\n{bash_script}");
                 println!("{bash_script}");
             }
             AppsOp::Unload => {
                 let bash_script = set_module_env_vars(apps_root_dir.as_ref(), &args.module, true)?;
+                debug!("Unload env vars in bash:\n{bash_script}");
                 println!("{bash_script}");
             }
         }
