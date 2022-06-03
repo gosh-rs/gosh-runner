@@ -78,7 +78,7 @@ fn show_available_modules(apps_root_dir: &Path) -> Result<()> {
     for entry in apps_root_dir.read_dir()? {
         let path = entry?.path();
         if path.is_dir() && path.join(".envrc").is_file() {
-            eprintln!("{} => {path:?}", path.file_name().unwrap().to_string_lossy());
+            eprintln!("{:^10} => {path:?}", path.file_name().unwrap().to_string_lossy());
         }
     }
     Ok(())
@@ -133,28 +133,31 @@ fn test_apps_module() {
 // b185bee5 ends here
 
 // [[file:../../runners.note::54d72d8a][54d72d8a]]
-#[derive(Debug, Clone, ArgEnum)]
+#[derive(Debug, Clone, Subcommand)]
 enum AppsOp {
     /// Load module environment variables
-    Load,
+    Load {
+        /// The requested module to be loaded
+        module: String,
+    },
     /// Unload module environment variables
-    Unload,
+    Unload {
+        /// The requested module to be unloaded
+        module: String,
+    },
     /// Show available modules
     Avail,
 }
 
 /// A shell environment manager as a poor-man's modulefiles (for bash only now)
 #[derive(Parser)]
-#[clap(author, version, about)]
+#[clap(disable_help_subcommand=true, disable_help_flag=true)]
 pub struct Apps {
     #[clap(flatten)]
     verbose: gut::cli::Verbosity,
 
-    #[clap(arg_enum)]
+    #[clap(subcommand)]
     action: AppsOp,
-
-    /// The requested module
-    module: Option<String>,
 }
 
 impl Apps {
@@ -164,13 +167,13 @@ impl Apps {
 
         let apps_root_dir = std::env::var("BBM_APPS_DIR").unwrap_or("/share/apps".into());
         match args.action {
-            AppsOp::Load => {
-                let bash_script = set_module_env_vars(apps_root_dir.as_ref(), &args.module.unwrap(), false)?;
+            AppsOp::Load { module } => {
+                let bash_script = set_module_env_vars(apps_root_dir.as_ref(), &module, false)?;
                 debug!("Load env vars in bash:\n{bash_script}");
                 println!("{bash_script}");
             }
-            AppsOp::Unload => {
-                let bash_script = set_module_env_vars(apps_root_dir.as_ref(), &args.module.unwrap(), true)?;
+            AppsOp::Unload { module } => {
+                let bash_script = set_module_env_vars(apps_root_dir.as_ref(), &module, true)?;
                 debug!("Unload env vars in bash:\n{bash_script}");
                 println!("{bash_script}");
             }
