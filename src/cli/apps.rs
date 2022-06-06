@@ -89,29 +89,38 @@ fn set_module_env_vars(apps_root_dir: &Path, module_name: &str, remove: bool) ->
     let mod_bin = mod_root.join("bin");
 
     let mut lines = String::new();
+
     // PATH
     if mod_bin.is_dir() {
-        let line = if remove {
-            remove_path("PATH", &format!("{}", mod_bin.display()))
-        } else {
-            prepend_path("PATH", &format!("{}", mod_bin.display()))
-        };
+        let line = path_env_cmd(&mod_bin, "PATH", remove);
         lines.push_str(&format!("{line};"));
     }
 
     // LD_LIBRARY_PATH
-    let mod_lib = mod_root.join("lib");
-    if mod_lib.is_dir() {
-        for path in ["CPATH", "LIBRARY_PATH", "LD_LIBRARY_PATH", "LD_RUN_PATH"] {
-            let line = if remove {
-                remove_path(path, &format!("{}", mod_lib.display()))
-            } else {
-                prepend_path(path, &format!("{}", mod_lib.display()))
-            };
+    for lib in ["lib", "lib64"] {
+        let mod_lib = mod_root.join(lib);
+        if mod_lib.is_dir() {
+            for path in ["LIBRARY_PATH", "LD_LIBRARY_PATH", "LD_RUN_PATH"] {
+                let line = path_env_cmd(&mod_lib, path, remove);
+                lines.push_str(&format!("{line};"));
+            }
+        }
+        // PKG_CONFIG_PATH
+        let root = mod_lib.join("pkgconfig");
+        if root.is_dir() {
+            let line = path_env_cmd(&root, "PKG_CONFIG_PATH", remove);
             lines.push_str(&format!("{line};"));
         }
     }
 
+    // CPATH
+    let include = mod_root.join("include");
+    if include.is_dir() {
+        let line = path_env_cmd(&include, "CPATH", remove);
+        lines.push_str(&format!("{line};"));
+    }
+
+    // source .envrc
     let mod_envrc = mod_root.join(".envrc");
     if mod_envrc.is_file() {
         info!("load .envrc {mod_envrc:?}");
@@ -123,6 +132,14 @@ fn set_module_env_vars(apps_root_dir: &Path, module_name: &str, remove: bool) ->
     }
 
     Ok(lines)
+}
+
+fn path_env_cmd(root: &Path, path: &str, remove: bool) -> String {
+    if remove {
+        remove_path(path, &format!("{}", root.display()))
+    } else {
+        prepend_path(path, &format!("{}", root.display()))
+    }
 }
 
 #[test]
