@@ -1,34 +1,36 @@
-# cargo
-
-# [[file:~/Workspace/Programming/gosh-rs/runners/runners.note::*cargo][cargo:1]]
+# [[file:runners.note::4f297f9c][4f297f9c]]
 [package]
-name = "runners"
-version = "0.0.5"
-edition = "2018"
+name = "gosh-runner"
+version = "0.1.0"
+edition = "2021"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
-structopt = "0.2"
-quicli = "0.4"
-chrono = "0.4"
-duct = "0.12"
 serde = { version = "1.0", features = ["derive"] }
+chrono = "0.4"
 tempfile = "3.0"
-futures = "0.1"
-bytes = "0.4"
-tokio = "0.1"
-tokio-signal = "0.2"
-tokio-process = "0.2"
-warp = "0.1"
-reqwest = "0.9"
-linefeed = "0.6"
-libc = "0.2"
+nix = "0.21"
+procfs = {version = "0.9"}
+tokio = { version="1.8.4", features=["full"]}
 slab = "0.4"
+slotmap = { version = "1.0", features = ["serde"] }
+bimap = { version = "0.6", features = ["serde"] }
+libc = "0.2"
+duct = "0.13"
+shared_child = "0.3"
+gosh-core = { version = "0.1.0" }
+clap = {version="3", features = ["derive"]}
+bytes = { version = "1" }
+
+# procspawn = "0.8"
+# futures = "0.1"
+# heim = "0.0.8"
 # nails = {path = "../nails/nails" }
-# rain_task = "0.4"
-# rocket = "0.4"
-# mpi = { git = "https://github.com/bsteinb/rsmpi", rev = "f9aec8b8d82" }
-# mpi = "0.5"
 
 [dev-dependencies]
-# cargo:1 ends here
+anyhow = "1"
+
+[features]
+adhoc = []
+# client = ["reqwest"]
+# 4f297f9c ends here

@@ -2,9 +2,9 @@
 use gosh_core::gut::prelude::*;
 // imports:1 ends here
 
-// [[file:../../runners.note::a6b47847][a6b47847]]
+// [[file:../../runners.note::0d2aca69][0d2aca69]]
 fn main() -> Result<()> {
-    gosh_runner::cli::local_enter_main()?;
+    gosh_runner::cli::Apps::enter_main()?;
     Ok(())
 }
-// a6b47847 ends here
+// 0d2aca69 ends here

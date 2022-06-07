@@ -1,24 +1,46 @@
-// lib.rs
-// :PROPERTIES:
-// :header-args: :tangle src/lib.rs
-// :END:
+// [[file:../runners.note::16bab924][16bab924]]
+use gosh_core::*;
+use gut::prelude::*;
 
-// [[file:~/Workspace/Programming/gosh-rs/runners/runners.note::*lib.rs][lib.rs:1]]
-#![feature(async_await)]
-pub mod local;
-pub mod server;
-pub mod client;
+use std::path::{Path, PathBuf};
 
-pub mod common {
-    pub use quicli::prelude::*;
-    pub use structopt::StructOpt;
-    pub type Result<T> = ::std::result::Result<T, Error>;
-
-    /// Return current timestamp string
-    pub fn timestamp_now() -> String {
-        use chrono::prelude::*;
-        let now: DateTime<Local> = Local::now();
-        format!("{}", now)
-    }
+/// Return current timestamp string
+fn timestamp_now() -> String {
+    use chrono::prelude::*;
+    let now: DateTime<Local> = Local::now();
+    format!("{}", now)
 }
-// lib.rs:1 ends here
+// 16bab924 ends here
+
+// [[file:../runners.note::9fd14bf8][9fd14bf8]]
+pub mod cli;
+pub mod interactive;
+pub mod job;
+pub mod process;
+pub mod stop;
+
+mod session;
+
+/// Some extension traits
+pub mod prelude {
+    pub use crate::process::SpawnSessionExt;
+}
+// 9fd14bf8 ends here
+
+// [[file:../runners.note::c6e9d2bf][c6e9d2bf]]
+#[cfg(feature = "adhoc")]
+/// Documentation for local development
+pub mod docs {
+    macro_rules! export_doc {
+        ($l:ident) => {
+            pub mod $l {
+                pub use crate::$l::*;
+            }
+        };
+    }
+
+    export_doc!(job);
+    export_doc!(process);
+    export_doc!(session);
+}
+// c6e9d2bf ends here
