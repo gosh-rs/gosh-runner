@@ -141,12 +141,6 @@ fn path_env_cmd(root: &Path, path: &str, remove: bool) -> String {
         prepend_path(path, &format!("{}", root.display()))
     }
 }
-
-#[test]
-#[ignore]
-fn test_apps_module() {
-    let x = set_module_env_vars("/share/apps".as_ref(), "mpich3");
-}
 // b185bee5 ends here
 
 // [[file:../../runners.note::54d72d8a][54d72d8a]]
