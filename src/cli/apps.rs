@@ -5,7 +5,7 @@ use super::*;
 // [[file:../../runners.note::8e91b7e1][8e91b7e1]]
 use gut::fs::ShellEscapeExt;
 
-#[derive(Debug, Clone, ArgEnum)]
+#[derive(Debug, Clone, ValueEnum)]
 enum PathOp {
     Append,
     Prepend,

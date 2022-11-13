@@ -19,7 +19,7 @@ libc = "0.2"
 duct = "0.13"
 shared_child = "0.3"
 gosh-core = { version = "0.1.0" }
-clap = {version="3", features = ["derive"]}
+clap = {version="4", features = ["derive"]}
 bytes = { version = "1" }
 
 # procspawn = "0.8"
