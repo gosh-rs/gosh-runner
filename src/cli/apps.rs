@@ -144,6 +144,8 @@ fn path_env_cmd(root: &Path, path: &str, remove: bool) -> String {
 // b185bee5 ends here
 
 // [[file:../../runners.note::54d72d8a][54d72d8a]]
+use gut::cli::*;
+
 #[derive(Debug, Clone, Subcommand)]
 enum AppsOp {
     /// Load module environment variables

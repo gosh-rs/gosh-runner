@@ -1,9 +1,13 @@
 # [[file:runners.note::4f297f9c][4f297f9c]]
 [package]
 name = "gosh-runner"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
+homepage = "https://github.com/gosh-rs/gosh-runner"
+repository = "https://github.com/gosh-rs/gosh-runner"
+description = "external process running support for gosh"
+license = "GPL-3.0"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -18,7 +22,7 @@ bimap = { version = "0.6", features = ["serde"] }
 libc = "0.2"
 duct = "0.13"
 shared_child = "0.3"
-gosh-core = { version = "0.1.0" }
+gosh-core = { version = "0.2.0" }
 clap = {version="4", features = ["derive"]}
 bytes = { version = "1" }
 
