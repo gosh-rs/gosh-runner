@@ -5,7 +5,7 @@ use super::*;
 // [[file:../../runners.note::8e91b7e1][8e91b7e1]]
 use gut::fs::ShellEscapeExt;
 
-#[derive(Debug, Clone, ArgEnum)]
+#[derive(Debug, Clone, ValueEnum)]
 enum PathOp {
     Append,
     Prepend,
@@ -140,12 +140,6 @@ fn path_env_cmd(root: &Path, path: &str, remove: bool) -> String {
     } else {
         prepend_path(path, &format!("{}", root.display()))
     }
-}
-
-#[test]
-#[ignore]
-fn test_apps_module() {
-    let x = set_module_env_vars("/share/apps".as_ref(), "mpich3");
 }
 // b185bee5 ends here
 

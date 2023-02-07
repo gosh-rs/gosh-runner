@@ -7,17 +7,17 @@ use crate::session::Session;
 use gut::cli::*;
 
 /// A local runner that can make graceful exit
-#[derive(StructOpt, Debug, Default)]
+#[derive(Parser, Debug, Default)]
 struct RunnerCli {
-    #[structopt(flatten)]
+    #[command(flatten)]
     verbose: gut::cli::Verbosity,
 
     /// Job timeout in seconds. The default timeout is 30 days.
-    #[structopt(long = "timeout", short = 't')]
+    #[arg(long, short)]
     timeout: Option<u32>,
 
     /// Command line to call a program
-    #[structopt(raw = true, required = true)]
+    #[arg(raw = true, required = true)]
     cmdline: Vec<String>,
 }
 
@@ -28,7 +28,7 @@ impl RunnerCli {
         I: IntoIterator,
         I::Item: Into<std::ffi::OsString> + Clone,
     {
-        let args = RunnerCli::from_iter_safe(iter)?;
+        let args = RunnerCli::try_parse_from(iter)?;
         args.verbose.setup_logger();
 
         let program = &args.cmdline[0];
